@@ -8,6 +8,7 @@ use App\Models\CourseLesson;
 use App\Models\Lesson;
 use App\Models\Price;
 use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -17,6 +18,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        User::factory(1)->create();
 
         Lesson::factory(1)->create();
 

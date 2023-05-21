@@ -18,8 +18,19 @@ use Illuminate\Support\Facades\Route;
 //    return $request->user();
 //});
 
-Route::get("/",[\App\Http\Controllers\Api\V1\Client\HomeController::class,"index"]);
+Route::get("/", [\App\Http\Controllers\Api\V1\Client\HomeController::class, "index"]);
 
-Route::apiResource("/course",\App\Http\Controllers\Api\V1\Admin\CourseController::class);
+Route::post("register", [\App\Http\Controllers\Api\V1\Admin\AuthController::class, "register"]);
+Route::post("login", [\App\Http\Controllers\Api\V1\Admin\AuthController::class, "login"]);
 
-Route::apiResource("/lesson",\App\Http\Controllers\Api\V1\Admin\LessonController::class);
+
+Route::group(["middleware" => ["auth:sanctum"]], function () {
+    Route::post("logout", [\App\Http\Controllers\Api\V1\Admin\AuthController::class, "logout"]);
+
+    Route::apiResource("/course", \App\Http\Controllers\Api\V1\Admin\CourseController::class);
+
+    Route::apiResource("/lesson", \App\Http\Controllers\Api\V1\Admin\LessonController::class);
+
+});
+
+
