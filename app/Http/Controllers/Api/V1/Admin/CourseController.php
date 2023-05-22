@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Admin;
 
+use App\Helpers\CacheHelpers;
 use App\Helpers\Traits\SetPrice;
 use App\Http\Controllers\Api\V1\ApiController;
 use App\Http\Controllers\Controller;
@@ -15,10 +16,11 @@ use Illuminate\Support\Facades\DB;
 class CourseController extends ApiController
 {
     use SetPrice;
+
     protected CourseRepository $courseRepository;
     protected PriceRepository $priceRepository;
 
-    public function __construct(CourseRepository $courseRepository,PriceRepository $priceRepository)
+    public function __construct(CourseRepository $courseRepository, PriceRepository $priceRepository)
     {
         $this->courseRepository = $courseRepository;
         $this->priceRepository = $priceRepository;
@@ -26,9 +28,12 @@ class CourseController extends ApiController
 
     public function index()
     {
-        $courses = $this->courseRepository->getAll(["lessons","prices"]);
+        //$courses = $this->courseRepository->getAll(["lessons","prices"]);
+        $courses = CacheHelpers::getFromCache("all_courses", function ()  {
+          return $this->courseRepository->getAll(["lessons", "prices"]);
+        });
 
-        return $this->success(200,$courses,"all the courses with their price & lessons");
+        return $this->success(200, $courses, "all the courses with their price & lessons");
     }
 
 
@@ -36,17 +41,19 @@ class CourseController extends ApiController
     {
         try {
             DB::beginTransaction();
-            $course = $this->courseRepository->create(["name"=>$request->name]);
+            $course = $this->courseRepository->create(["name" => $request->name]);
 
             if (!is_null($request->lesson_id))
-                $this->courseRepository->sync($course->lessons(),$request->lesson_ids);
+                $this->courseRepository->sync($course->lessons(), $request->lesson_ids);
 
-            $this->setPrice($course,$request->price);
+            $this->setPrice($course, $request->price);
             DB::commit();
 
-            return $this->success(200,$course,"course ".$request->name." created successfully!");
+            CacheHelpers::clearCache(["all_courses","all_lessons"]);
 
-        }catch (\Exception){
+            return $this->success(200, $course, "course " . $request->name . " created successfully!");
+
+        } catch (\Exception) {
             DB::rollBack();
         }
     }
@@ -55,9 +62,11 @@ class CourseController extends ApiController
     public function update(UpdateCourseRequest $request, Course $course)
     {
         $model = $course->prices;
-        $this->courseRepository->update($model,["price"=>$request->price]);
+        $this->courseRepository->update($model, ["price" => $request->price]);
 
-        return $this->success(200,$course,"course ".$request->name." updated successfully!");
+        CacheHelpers::clearCache(["all_courses","all_lessons"]);
+
+        return $this->success(200, $course, "course " . $request->name . " updated successfully!");
 
     }
 
@@ -72,9 +81,11 @@ class CourseController extends ApiController
 
             DB::commit();
 
-            return $this->success(202,[],"course deleted successfully!");
+            CacheHelpers::clearCache(["all_courses","all_lessons"]);
 
-        }catch (\Exception){
+            return $this->success(202, [], "course deleted successfully!");
+
+        } catch (\Exception) {
             DB::rollBack();
         }
 

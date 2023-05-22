@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Admin;
 
+use App\Helpers\CacheHelpers;
 use App\Helpers\Traits\SetPrice;
 use App\Http\Controllers\Api\V1\ApiController;
 use App\Http\Controllers\Controller;
@@ -29,7 +30,12 @@ class LessonController extends ApiController
     public function index()
     {
 
-        $lessons = $this->lessonRepository->getAll(["prices","courses"],[]);
+        //$lessons = $this->lessonRepository->getAll(["prices","courses"],[]);
+
+        $lessons = CacheHelpers::getFromCache("all_lessons",function (){
+            return $this->lessonRepository->getAll(["prices","courses"],[]);
+        });
+
         return $this->success(200,$lessons,"all the lessons with their price & parent course!");
     }
 
@@ -45,6 +51,8 @@ class LessonController extends ApiController
 
             $this->setPrice($lesson,$request->price);
             DB::commit();
+
+            CacheHelpers::clearCache(["all_courses","all_lessons"]);
 
             return $this->success(200,$lesson,"lesson ".$request->name." created successfully!");
 
@@ -68,6 +76,9 @@ class LessonController extends ApiController
             $this->lessonRepository->delete($lesson);
 
             DB::commit();
+
+            CacheHelpers::clearCache(["all_courses","all_lessons"]);
+
             return $this->success(202,[],"lesson deleted successfully!");
 
         }catch (\Exception){
