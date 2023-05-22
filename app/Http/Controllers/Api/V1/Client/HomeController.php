@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Api\V1\Client;
 
+use App\Http\Controllers\Api\V1\ApiController;
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Repositories\Mysql\Setting\SettingRepository;
 use Illuminate\Http\Request;
 
-class HomeController extends Controller
+class HomeController extends ApiController
 {
     protected SettingRepository $settingRepository;
 
@@ -19,6 +20,8 @@ class HomeController extends Controller
     public function index()
     {
         $settingInfo = $this->settingRepository->first();
-        return json_decode($settingInfo->info);
+        $info = json_decode($settingInfo->info);
+
+        return $this->success(200,$info,"welcome");
     }
 }
